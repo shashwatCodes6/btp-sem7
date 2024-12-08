@@ -1,9 +1,11 @@
-import av
 import os
 import sys
 import streamlit as st
 import cv2
 import tempfile
+import json
+from ids import get_Arr
+from utils import get_inward_data, get_outward_data
 
 
 BASE_DIR = os.path.abspath(os.path.join(__file__, '../../'))
@@ -51,7 +53,7 @@ if os.path.exists(output_video_file):
 
 
 with st.form('Upload', clear_on_submit=True):
-    up_file = st.file_uploader("Upload a Video", ['mp4','mov', 'avi'])
+    up_file = st.file_uploader("Upload a Video", ['mp4','mov','avi'])
     uploaded = st.form_submit_button("Upload")
 
 stframe = st.empty()
@@ -88,17 +90,45 @@ if up_file and uploaded:
         txt = st.sidebar.markdown(ip_vid_str, unsafe_allow_html=True)   
         ip_video = st.sidebar.video(tfile.name) 
 
+
+        inward_arr = get_inward_data(up_file.name)
+        outward_arr = get_outward_data(up_file.name)
+
         while vf.isOpened():
             ret, frame = vf.read()
             if not ret:
                 break
 
+            timestamp = vf.get(cv2.CAP_PROP_POS_MSEC)
+            # print(timestamp)
+            inward_knee  = (inward_arr[0]  < timestamp / 1000 < inward_arr[1])
+            outward_knee = (outward_arr[0] < timestamp / 1000 < outward_arr[1])
+
             # convert frame from BGR to RGB before processing it.
             frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-            out_frame, _ = upload_process_frame.process(frame, pose)
+            out_frame, _ = upload_process_frame.process(frame, pose, inward_knee, outward_knee)
             stframe.image(out_frame)
             video_output.write(out_frame[...,::-1])
 
+
+        angles_array = upload_process_frame.angles_array
+        angles_json = {
+            "len": len(angles_array),
+            "arr": angles_array,
+            "id":  up_file.name
+        }
+
+        json_file_path = './angles.json'
+        if os.path.exists(json_file_path):
+            with open(json_file_path, 'r') as json_file:
+                data = json.load(json_file)
+        else:
+            data = []
+
+        data.append(angles_json)
+
+        with open(json_file_path, 'w') as json_file:
+            json.dump(data, json_file)
         
         vf.release()
         video_output.release()
@@ -108,7 +138,7 @@ if up_file and uploaded:
         tfile.close()
     
     except AttributeError:
-        warn.markdown(warning_str, unsafe_allow_html=True)   
+        warn.markdown(warning_str, unsafe_allow_html=True)
 
 
 
@@ -125,11 +155,5 @@ if os.path.exists(output_video_file) and st.session_state['download']:
     os.remove(output_video_file)
     st.session_state['download'] = False
     download_button.empty()
-
-
-    
-    
-
-    
 
 

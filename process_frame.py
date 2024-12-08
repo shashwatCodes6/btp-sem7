@@ -63,6 +63,7 @@ class ProcessFrame:
         self.dict_features['right'] = self.right_features
         self.dict_features['nose'] = 0
 
+        self.angles_array = []
         
         # For tracking counters and sharing states in and out of callbacks.
         self.state_tracker = {
@@ -156,7 +157,7 @@ class ProcessFrame:
 
 
 
-    def process(self, frame: np.array, pose):
+    def process(self, frame: np.array, pose, inward_knee = False, outward_knee = False):
         play_sound = None
        
 
@@ -176,8 +177,8 @@ class ProcessFrame:
 
             offset_angle = find_angle(left_shldr_coord, right_shldr_coord, nose_coord)
 
-            if offset_angle > self.thresholds['OFFSET_THRESH']:
-                
+            # if offset_angle > self.thresholds['OFFSET_THRESH']:
+            if False:   
                 display_inactivity = False
 
                 end_time = time.perf_counter()
@@ -271,27 +272,27 @@ class ProcessFrame:
                     shldr_coord = left_shldr_coord
                     elbow_coord = left_elbow_coord
                     wrist_coord = left_wrist_coord
-                    hip_coord = left_hip_coord
-                    knee_coord = left_knee_coord
+                    hip_coord   = left_hip_coord
+                    knee_coord  = left_knee_coord
                     ankle_coord = left_ankle_coord
-                    foot_coord = left_foot_coord
+                    foot_coord  = left_foot_coord
 
                     multiplier = -1
-                                     
+
                 
                 else:
                     shldr_coord = right_shldr_coord
                     elbow_coord = right_elbow_coord
                     wrist_coord = right_wrist_coord
-                    hip_coord = right_hip_coord
-                    knee_coord = right_knee_coord
+                    hip_coord   = right_hip_coord
+                    knee_coord  = right_knee_coord
                     ankle_coord = right_ankle_coord
-                    foot_coord = right_foot_coord
+                    foot_coord  = right_foot_coord
 
                     multiplier = 1
                     
 
-                # ------------------- Verical Angle calculation --------------
+                # ------------------- Verical Angle calculation ------------------- #
                 
                 hip_vertical_angle = find_angle(shldr_coord, np.array([hip_coord[0], 0]), hip_coord)
                 cv2.ellipse(frame, hip_coord, (30, 30), 
@@ -352,7 +353,7 @@ class ProcessFrame:
                 if current_state == 's1':
 
                     if len(self.state_tracker['state_seq']) == 3 and not self.state_tracker['INCORRECT_POSTURE']:
-                        self.state_tracker['SQUAT_COUNT']+=1
+                        self.state_tracker['SQUAT_COUNT'] += 1
                         play_sound = str(self.state_tracker['SQUAT_COUNT'])
                         
                     elif 's2' in self.state_tracker['state_seq'] and len(self.state_tracker['state_seq'])==1:
@@ -363,7 +364,7 @@ class ProcessFrame:
                         self.state_tracker['IMPROPER_SQUAT']+=1
                         play_sound = 'incorrect'
                         
-                    
+                    # print(self.angles_array)
                     self.state_tracker['state_seq'] = []
                     self.state_tracker['INCORRECT_POSTURE'] = False
 
@@ -399,6 +400,12 @@ class ProcessFrame:
                     if (ankle_vertical_angle > self.thresholds['ANKLE_THRESH']):
                         self.state_tracker['DISPLAY_TEXT'][2] = True
                         self.state_tracker['INCORRECT_POSTURE'] = True
+
+                    # print(knee_vertical_angle, knee_coord, ankle_vertical_angle, ankle_coord, hip_vertical_angle, hip_coord)
+                    self.angles_array.append([knee_vertical_angle, ankle_vertical_angle, hip_vertical_angle, inward_knee, outward_knee])
+
+
+
 
 
                 # ----------------------------------------------------------------------------------------------------

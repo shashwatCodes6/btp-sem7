@@ -1,3 +1,4 @@
+import json
 import cv2
 import mediapipe as mp
 import numpy as np
@@ -144,3 +145,42 @@ def get_mediapipe_pose(
                                     min_tracking_confidence = min_tracking_confidence
                                  )
     return pose
+
+
+
+json_file_path = 'error_knee_out.json'
+json_file_path2 = 'error_knee_inward.json'
+
+def get_inward_data(id):
+    in_data = {}
+    id = id.split('.')[0]
+    # if len(in_data) != 0:
+    #     if(in_data[id] == []):
+    #         return [-1, -1]
+    #     return in_data[id]
+
+    with open(json_file_path, 'r') as json_file:
+        data = json.load(json_file)
+
+    in_data = {key: value for key, value in data.items()}
+    # print(in_data)
+    if in_data.get(id, []) == []:
+        return [-1, -1]
+    return in_data[id][0]
+
+
+def get_outward_data(id):
+    out_data = {}
+    id = id.split('.')[0]
+    # if len(out_data) != 0:
+    #     if(out_data[id] == []):
+    #         return [-1, -1]
+    #     return out_data[id]
+
+    with open(json_file_path2, 'r') as json_file:
+        data = json.load(json_file)
+
+    out_data = {key: value for key, value in data.items()}
+    if out_data.get(id, []) == []:
+        return [-1, -1]
+    return out_data[id][0]
